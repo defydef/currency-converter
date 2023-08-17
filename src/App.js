@@ -3,10 +3,12 @@
 import { useEffect, useState } from "react";
 
 function App() {
-  const [amount, setAmount] = useState(100);
+  const [amount, setAmount] = useState(15000);
   const [fromCurrency, setFromCurrency] = useState("IDR");
   const [toCurrency, setToCurrency] = useState("USD");
-  const [rates, setRates] = useState(0);
+  const [rates, setRates] = useState("Loading...");
+
+  const [error, setError] = useState("");
 
   useEffect(
     function () {
@@ -16,9 +18,7 @@ function App() {
       async function fetchCurrencies() {
         try {
           const res = await fetch(
-            `https://${host}/latest?amount=${Number(
-              amount
-            )}&from=${fromCurrency}&to=${toCurrency}`,
+            `https://${host}/latest?amount=${amount}&from=${fromCurrency}&to=${toCurrency}`,
             { signal: controller.signal }
           );
           if (!res.ok) throw new Error();
@@ -26,11 +26,12 @@ function App() {
           if (data.Response === "False") throw new Error(data.Error);
           setRates(data.rates[toCurrency]);
         } catch (e) {
-          console.log(e.message);
+          if (e.name !== "AbortError") setError(e.message);
         }
       }
       if (amount !== 0 && fromCurrency !== toCurrency) fetchCurrencies();
 
+      // cleanup function
       return function () {
         controller.abort();
       };
@@ -63,7 +64,8 @@ function App() {
         <option value="IDR">IDR</option>
         <option value="AUD">AUD</option>
       </select>
-      <p>{fromCurrency !== toCurrency ? rates : amount}</p>
+      {!error && <p>{fromCurrency !== toCurrency ? rates : amount}</p>}
+      {error && <p>{error}</p>}
     </div>
   );
 }
